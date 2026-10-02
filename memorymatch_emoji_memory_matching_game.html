@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryMatch - Emoji Memory Matching Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.3);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.6);
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+    <header class="w-full border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-emerald-400 p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">MemoryMatch</h1>
+                    <p class="text-[11px] text-slate-400">Emoji Memory Matching Game Suite</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-slate-300">
+                    🏆 Best Score: <span id="header-best" class="text-brand-400 font-mono">--</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-1 w-full flex flex-col justify-center space-y-6">
+        
+        <!-- Controls Bar -->
+        <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 backdrop-blur shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <select id="category-select" onchange="resetGame()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 w-full sm:w-auto">
+                    <option value="animals">🐶 Animals & Pets</option>
+                    <option value="tech">💻 Tech & Gear</option>
+                    <option value="foods">🍔 Foods & Fruits</option>
+                    <option value="sports">⚽ Sports & Fun</option>
+                </select>
+                <select id="difficulty-select" onchange="resetGame()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 w-full sm:w-auto">
+                    <option value="easy">Easy (12 Cards)</option>
+                    <option value="medium" selected>Medium (16 Cards)</option>
+                    <option value="hard">Hard (24 Cards)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-6 font-mono text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 text-xs uppercase">Moves:</span>
+                    <span id="moves-display" class="font-bold text-white text-base">0</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 text-xs uppercase">Time:</span>
+                    <span id="timer-display" class="font-bold text-brand-400 text-base">00:00</span>
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-brand-600/20 flex items-center gap-1.5 shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Restart
+            </button>
+        </div>
+
+        <div id="game-board" class="grid gap-4 w-full max-w-2xl mx-auto">
+            <!-- Populated via JavaScript -->
+        </div>
+
+    </main>
+
+    <div id="victory-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center space-y-6">
+            <div class="w-16 h-16 bg-brand-500/10 border border-brand-500/30 text-brand-400 rounded-2xl mx-auto flex items-center justify-center text-2xl animate-bounce">
+                🎉
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white">Puzzle Solved!</h3>
+                <p class="text-xs text-slate-400 mt-1">You matched all the emoji pairs successfully</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 py-4 border-y border-slate-800 text-center">
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <p class="text-[10px] uppercase font-semibold text-slate-500">Total Moves</p>
+                    <p id="modal-moves" class="text-xl font-extrabold text-brand-400 mt-1 font-mono">0</p>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <p class="text-[10px] uppercase font-semibold text-slate-500">Time Taken</p>
+                    <p id="modal-time" class="text-xl font-extrabold text-white mt-1 font-mono">00:00</p>
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-brand-600/20">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-brand-600 text-white px-6 py-3 rounded-2xl shadow-2xl text-xs font-semibold border border-emerald-400/30 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        Notification message
+    </div>
+
+    <script>
+        const emojiSets = {
+            animals: ['🐶', '🐱', '🦊', '🐼', '🐨', '🦁', '🐯', '🐰', '🐸', '🐵', '🦄', '🐝'],
+            tech: ['💻', '📱', '⌚', '📷', '🎧', '🕹️', '⌨️', '🖱️', '🔋', '📡', '💾', '💡'],
+            foods: ['🍕', '🍔', '🍣', '🍩', '🥑', '🍉', '🍿', '🍦', '🌮', '🥞', '🍇', '🍜'],
+            sports: ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🥊', '⛳']
+        };
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timer = null;
+        let secondsElapsed = 0;
+        let isStarted = false;
+        let isLocked = false;
+        let bestScore = null;
+
+        function initApp() {
+            const saved = localStorage.getItem('memorymatch_best_moves');
+            if (saved) {
+                bestScore = parseInt(saved, 10);
+                document.getElementById('header-best').textContent = bestScore;
+            }
+            resetGame();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function resetGame() {
+            clearInterval(timer);
+            isStarted = false;
+            isLocked = false;
+            moves = 0;
+            secondsElapsed = 0;
+            matchedPairs = 0;
+            flippedCards = [];
+
+            document.getElementById('moves-display').textContent = '0';
+            document.getElementById('timer-display').textContent = '00:00';
+            document.getElementById('victory-modal').classList.remove('flex');
+            document.getElementById('victory-modal').classList.add('hidden');
+
+            const category = document.getElementById('category-select').value;
+            const difficulty = document.getElementById('difficulty-select').value;
+
+            let pairCount = 6; // easy
+            let gridCols = 'grid-cols-3 sm:grid-cols-4';
+
+            if (difficulty === 'medium') {
+                pairCount = 8;
+                gridCols = 'grid-cols-4';
+            } else if (difficulty === 'hard') {
+                pairCount = 12;
+                gridCols = 'grid-cols-4 sm:grid-cols-6';
+            }
+
+            const board = document.getElementById('game-board');
+            board.className = `grid gap-3 w-full max-w-3xl mx-auto ${gridCols}`;
+
+            const selectedEmojis = emojiSets[category].slice(0, pairCount);
+            const deck = [...selectedEmojis, ...selectedEmojis];
+            // Shuffle
+            deck.sort(() => Math.random() - 0.5);
+
+            cards = deck.map((emoji, idx) => ({
+                id: idx,
+                emoji,
+                isFlipped: false,
+                isMatched: false
+            }));
+
+            renderBoard();
+        }
+
+        function startTimer() {
+            if (isStarted) return;
+            isStarted = true;
+            timer = setInterval(() => {
+                secondsElapsed++;
+                const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = cards.map(card => `
+                <div onclick="flipCard(${card.id})" class="perspective-1000 h-24 sm:h-28 cursor-pointer select-none">
+                    <div class="relative w-full h-full duration-300 transform-style-3d rounded-2xl shadow-lg ${card.isFlipped || card.isMatched ? 'rotate-y-180' : ''}">
+                        <!-- Card Front (Hidden) -->
+                        <div class="absolute inset-0 w-full h-full bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center backface-hidden hover:border-brand-500/50 transition">
+                            <span class="text-2xl opacity-40">❓</span>
+                        </div>
+                        <!-- Card Back (Revealed Emoji) -->
+                        <div class="absolute inset-0 w-full h-full bg-slate-900 border border-brand-500/50 rounded-2xl flex items-center justify-center backface-hidden rotate-y-180 shadow-inner">
+                            <span class="text-3xl sm:text-4xl">${card.emoji}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function flipCard(id) {
+            if (isLocked) return;
+            const clicked = cards.find(c => c.id === id);
+            if (!clicked || clicked.isFlipped || clicked.isMatched) return;
+
+            startTimer();
+            clicked.isFlipped = true;
+            flippedCards.push(clicked);
+            renderBoard();
+
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves-display').textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.emoji === c2.emoji) {
+                c1.isMatched = true;
+                c2.isMatched = true;
+                matchedPairs++;
+                flippedCards = [];
+
+                const category = document.getElementById('category-select').value;
+                const difficulty = document.getElementById('difficulty-select').value;
+                let totalPairs = difficulty === 'easy' ? 6 : difficulty === 'medium' ? 8 : 12;
+
+                if (matchedPairs === totalPairs) {
+                    endGame();
+                }
+            } else {
+                isLocked = true;
+                setTimeout(() => {
+                    c1.isFlipped = false;
+                    c2.isFlipped = false;
+                    flippedCards = [];
+                    isLocked = false;
+                    renderBoard();
+                }, 800);
+            }
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+            const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+            const timeStr = `${mins}:${secs}`;
+
+            document.getElementById('modal-moves').textContent = moves;
+            document.getElementById('modal-time').textContent = timeStr;
+
+            const modal = document.getElementById('victory-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            if (bestScore === null || moves < bestScore) {
+                bestScore = moves;
+                localStorage.setItem('memorymatch_best_moves', bestScore);
+                document.getElementById('header-best').textContent = bestScore;
+                showToast('New Best Score Record! 🏆');
+            } else {
+                showToast('Puzzle completed successfully!');
+            }
+        }
+
+        window.onload = () => {
+            initApp();
+        };
+    </script>
+</body>
+</html>
